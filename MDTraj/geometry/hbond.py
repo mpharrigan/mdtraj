@@ -150,9 +150,13 @@ def wernet_nilsson(traj, exclude_water=True, periodic=True):
         return [np.zeros((0, 3), dtype=int) for _ in range(traj.n_frames)]
 
     if not exclude_water:
-        acceptors = [a.index for a in traj.topology.atoms if a.element.symbol == 'O']
+        acceptors = [a.index for a in traj.topology.atoms
+                     if a.element is not None and
+                        a.element.symbol == 'O']
     else:
-        acceptors = [a.index for a in traj.topology.atoms if a.element.symbol == 'O' and a.residue.name != 'HOH']
+        acceptors = [a.index for a in traj.topology.atoms
+                     if a.element is not None and
+                     a.element.symbol == 'O' and a.residue.name != 'HOH']
 
     # This is used to compute the angles
     angle_triplets = np.array([(e[0][1], e[0][0], e[1]) for e in product(xh_donors, acceptors) if e[0][0] != e[1]])
