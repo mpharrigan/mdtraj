@@ -1,5 +1,6 @@
 #include "stdio.h"
 #include <vector>
+#include <limits>
 #include <pmmintrin.h>
 #include <smmintrin.h>
 #include "ssetools.h"
@@ -47,7 +48,6 @@ template<bool periodic> float get_dist(float* frame_xyz, int i, int j,
 }
 
 
-
 /**
  *
  *
@@ -91,4 +91,51 @@ std::vector<int> _compute_neighbors(
     }
 
     return result;
+}
+
+
+/**
+ * Find nearest neighbor indices and distances. Returns indices,
+ * writes to float* distances.
+ *
+ */
+std::vector<int> _compute_neighbor_distances(
+    float* frame_xyz, int n_atoms,
+    const std::vector<int>& query_indices,
+    const std::vector<int>& haystack_indices,
+    float* box_matrix, float* distances)
+{
+    std::vector<int> result_inds;
+    std::vector<int>::const_iterator qit;
+    int i = 0; // cpp needs "zip"
+    for (qit = query_indices.begin(); qit != query_indices.end(); ++qit) {
+        float min_dist = std::numeric_limits<float>::max();
+        int min_ind;
+
+        std::vector<int>::const_iterator hit;
+        for (hit = haystack_indices.begin(); hit != haystack_indices.end(); ++hit) {
+            // compute distance from haystack atom *hit to query atom *qit
+            if (*hit == *qit) {
+                continue;
+            }
+            float dist = 0;
+            if (box_matrix == NULL) {
+                dist = get_dist<false>(frame_xyz, *hit, *qit, box_matrix);
+            } else {
+                dist = get_dist<true>(frame_xyz, *hit, *qit, box_matrix);
+            }
+
+            if (dist < min_dist) {
+                min_dist = dist;
+                min_ind = *hit;
+            }
+         }
+
+         result_inds.push_back(min_ind);
+         distances[i] = min_dist;
+         ++i;
+
+    }
+
+    return result_inds;
 }

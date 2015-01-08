@@ -32,12 +32,16 @@ from mdtraj.geometry import _geometry
 
 from libcpp.vector cimport vector
 
-__all__ = ['compute_neighbors']
+__all__ = ['compute_neighbors', 'compute_neighbor_distances']
 
 cdef extern from "neighbors.hpp":
     vector[int] _compute_neighbors(float* xyz, int n_atoms, float cutoff,
         vector[int]& query_indices, vector[int]& haystack_indices,
         float* box_matrix) nogil
+
+    vector[int] _compute_neighbor_distances(float* xyz, int n_atoms, 
+        vector[int]& query_indices, vector[int]& haystack_indices,
+        float* box_matrix, float* distances) nogil
 
 ##############################################################################
 # Functions
@@ -126,3 +130,83 @@ def compute_neighbors(traj, cutoff, query_indices, haystack_indices=None,
 
     return results
 
+def compute_neighbor_distances(traj, query_indices,
+        haystack_indices=None, periodic=True):
+    """compute_neighbor_distances(traj, query_indices, haystack_indices=None, periodic=True)
+
+    Find (spatially) neighboring atoms in a trajectory and distances.
+
+    For each query index in query_indices, compute the index and
+    distance of the closest atom in haystack_indices.
+
+    Parameters
+    ----------
+    traj : md.Trajectory
+        An MDTraj trajectory
+    query_indices : np.ndarray, shape=(n_query_indices,), dtype=int
+        The matching atoms are those that are within `cutoff` of one or more
+        of the atoms with indices in `query_indices`.
+    haystack_indices : np.ndarray, shape=(n_query_indices,), dtype=int, optional
+        If supplied, restrict the search to only those atoms in
+        `haystack_indices`.
+    periodic : bool
+        If `periodic` is True and the trajectory contains unitcell
+        information, we will compute distances under the minimum image
+        convention.
+
+    Returns
+    -------
+    indices : np.ndarray, shape=(n_frames, n_query), dtype=int
+        Indices of the closest atom to the query atom in the given
+        frame.
+    distances : np.ndarray, shape=(n_frames, n_query), dtype=float
+        Distances of the closest atom to the query atom in the given
+        frame.
+    """
+
+    query_indices = ensure_type(query_indices, dtype=np.int32, ndim=1,
+                                name='query_indices', warn_on_cast=False)
+    haystack_indices = ensure_type(haystack_indices, dtype=np.int32, ndim=1,
+                                   name='haystack_indices', warn_on_cast=False,
+                                   can_be_none=True)
+    if haystack_indices is None:
+        haystack_indices = np.arange(traj.xyz.shape[1])
+
+    if not np.all((query_indices >= 0) * (query_indices < traj.xyz.shape[1]) * (query_indices < traj.xyz.shape[1])):
+        raise ValueError("query_indices must be valid positive indices")
+    if not np.all((haystack_indices >= 0) * (haystack_indices < traj.xyz.shape[1]) * (haystack_indices < traj.xyz.shape[1])):
+        raise ValueError("haystack_indices must be valid positive indices")
+
+    cdef int i
+    cdef int n_frames = traj.xyz.shape[0]
+    cdef float[:, :, ::1] xyz = traj.xyz
+    cdef float[:, :, ::1] box_matrix
+    cdef float* box_matrix_pointer
+    cdef vector[int] query_indices_ = query_indices
+    cdef vector[int] haystack_indices_ = haystack_indices
+    cdef vector[int] frame_neighbors
+    cdef int[::1] frame_neighbors_mview
+    cdef int is_periodic = periodic and (traj.unitcell_vectors is not None)
+    if is_periodic:
+        box_matrix = np.asarray(traj.unitcell_vectors, order='c')
+        box_matrix_pointer = &box_matrix[0,0,0]
+    else:
+        box_matrix_pointer = NULL
+    cdef float[:, ::1] distances = np.zeros((len(traj), len(query_indices)))
+
+    indices = []
+    for i in range(n_frames):
+        frame_neighbors = _compute_neighbor_distances(
+            &xyz[i,0,0], traj.xyz.shape[1], query_indices_,
+            haystack_indices_, box_matrix_pointer, &distances[i,0])
+        # now, we need to go from STL vector[int] to a numpy array without
+        # egregious copying performance.
+        # I can't find any great cython docs on this...
+        # first, convert to a memoryview by casting the pointer to the memory
+        # block. this implements the python buffer protocol...
+        frame_neighbors_mview = <int[:frame_neighbors.size()]> (<int*> (&frame_neighbors[0]))
+        # so then we can copy it into numpy-managed memory. copy is necessary,
+        # because once we exit this scope, C++ will clean up the vector.
+        indices.append(np.array(frame_neighbors_mview, dtype=np.int, copy=True))
+
+    return np.asarray(distances), np.asarray(indices)

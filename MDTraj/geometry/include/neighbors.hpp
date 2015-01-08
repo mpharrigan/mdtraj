@@ -7,4 +7,11 @@ std::vector<int> _compute_neighbors(
     const std::vector<int>& haystack_indices,
     float* box_matrix);
 
+
+std::vector<int> _compute_neighbor_distances(
+    float* frame_xyz, int n_atoms,
+    const std::vector<int>& query_indices,
+    const std::vector<int>& haystack_indices,
+    float* box_matrix, float* distances);
+
 #endif
