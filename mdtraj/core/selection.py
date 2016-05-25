@@ -104,6 +104,7 @@ class SelectionKeyword(object):
         (('none', 'nothing'), ast.Name(id='False', ctx=ast.Load())),
         (('backbone', 'is_backbone'), _chain('is_backbone')),
         (('sidechain', 'is_sidechain'), _chain('is_sidechain')),
+        (('heavy', 'is_heavy'), _chain('is_heavy')),
 
         # Atom.residue.<attribute>
         (('protein', 'is_protein'), _chain('residue', 'is_protein')),

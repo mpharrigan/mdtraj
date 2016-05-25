@@ -1395,6 +1395,11 @@ class Atom(object):
                 and self.residue.is_protein)
 
     @property
+    def is_heavy(self):
+        return (self.element != elem.hydrogen
+                and self.residue.is_protein)
+
+    @property
     def segment_id(self):
         """User specified segment_id of the residue to which this atom belongs"""
         return self.residue.segment_id
