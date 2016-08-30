@@ -56,7 +56,6 @@ cdef int _BINPOS_EOF = -1  # end of file (or error)
 # Classes
 ###############################################################################
 
-@FormatRegistry.register_loader('.binpos')
 def load_binpos(filename, top=None, stride=None, atom_indices=None, frame=None):
     """load_binpos(filename, top=None, stride=None, atom_indices=None, frame=None)
 

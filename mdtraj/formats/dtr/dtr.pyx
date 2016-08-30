@@ -81,7 +81,6 @@ def _load_desmond_traj(filename, top=None, stride=None, atom_indices=None, frame
         return f.read_as_traj(topology, n_frames=n_frames, atom_indices=atom_indices, stride=stride)
 
 
-@FormatRegistry.register_loader('.dtr')
 def load_dtr(filename, top=None, stride=None, atom_indices=None, frame=None):
     """load_dtr(filename, top=None, stride=None, atom_indices=None, frame=None)
 

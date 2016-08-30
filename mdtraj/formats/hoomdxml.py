@@ -32,7 +32,7 @@ __all__ = ['load_hoomdxml']
 
 
 @FormatRegistry.register_loader('.hoomdxml')
-def load_hoomdxml(filename, top=None):
+def load_hoomdxml(filename, top=None, frame=0):
     """Load a single conformation from an HOOMD-Blue XML file.
 
     For more information on this file format, see:
@@ -60,6 +60,8 @@ def load_hoomdxml(filename, top=None):
     -----
     This function requires the NetworkX python package.
     """
+    assert frame==0, "This can only load frame 0"
+
     from mdtraj.core.trajectory import Trajectory
     from mdtraj.core.topology import Topology
     topology = Topology()

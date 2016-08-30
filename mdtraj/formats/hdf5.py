@@ -66,7 +66,7 @@ Frames = namedtuple('Frames', ['coordinates', 'time', 'cell_lengths', 'cell_angl
 
 @FormatRegistry.register_loader('.h5')
 @FormatRegistry.register_loader('.hdf5')
-def load_hdf5(filename, stride=None, atom_indices=None, frame=None):
+def load_hdf5(filename, stride=None, atom_indices=None, frame=None, top=None):
     """Load an MDTraj hdf5 trajectory file from disk.
 
     Parameters
@@ -83,6 +83,8 @@ def load_hdf5(filename, stride=None, atom_indices=None, frame=None):
         Use this option to load only a single frame from a trajectory on disk.
         If frame is None, the default, the entire trajectory will be loaded.
         If supplied, ``stride`` will be ignored.
+    top : None
+        Ignored. hdf5 files contain topology information.
 
     Examples
     --------
@@ -107,6 +109,9 @@ def load_hdf5(filename, stride=None, atom_indices=None, frame=None):
     if not isinstance(filename, string_types):
         raise TypeError('filename must be of type string for load_lh5. '
             'you supplied %s' % type(filename))
+    if 'top' is not None:
+        warnings.warn('top= kwarg ignored since file '
+                      'contains topology information')
 
     atom_indices = cast_indices(atom_indices)
 

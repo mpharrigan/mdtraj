@@ -124,10 +124,8 @@ def load_lh5(filename, top=None, stride=None, atom_indices=None, frame=None):
     ----------
     filename : str
         filename of AMBER NetCDF file.
-    top : {str, Trajectory, Topology}
-        The NetCDF format does not contain topology information. Pass in either
-        the path to a pdb file, a trajectory, or a topology to supply this
-        information.
+    top : None
+        Ignored. lh5 files contain topology information.
     stride : int, default=None
         Only read every stride-th frame
     atom_indices : array_like, optional
@@ -143,6 +141,10 @@ def load_lh5(filename, top=None, stride=None, atom_indices=None, frame=None):
     --------
     mdtraj.LH5TrajectoryFile :  Low level interface to LH5 files
     """
+    if 'top' is not None:
+        warnings.warn('top= kwarg ignored since file '
+                      'contains topology information')
+
     atom_indices = cast_indices(atom_indices)
     with LH5TrajectoryFile(filename) as f:
         if frame is not None:

@@ -26,27 +26,13 @@ trajectories in a variety of formats, including Gromacs XTC & TRR, CHARMM/NAMD
 DCD, AMBER BINPOS, PDB, and HDF5.
 """
 
-from mdtraj.formats.registry import FormatRegistry
-from mdtraj.formats.xtc import load_xtc
-from mdtraj.formats.trr import load_trr
-from mdtraj.formats.hdf5 import load_hdf5
-from mdtraj.formats.lh5 import load_lh5
-from mdtraj.formats.netcdf import load_netcdf
-from mdtraj.formats.mdcrd import load_mdcrd
-from mdtraj.formats.dcd import load_dcd
-from mdtraj.formats.binpos import load_binpos
-from mdtraj.formats.pdb import load_pdb
-from mdtraj.formats.arc import load_arc
-from mdtraj.formats.openmmxml import load_xml
-from mdtraj.formats.prmtop import load_prmtop
-from mdtraj.formats.psf import load_psf
-from mdtraj.formats.mol2 import load_mol2
-from mdtraj.formats.amberrst import load_restrt, load_ncrestrt
-from mdtraj.formats.lammpstrj import load_lammpstrj
-from mdtraj.formats.dtr import load_dtr, load_stk
-from mdtraj.formats.xyzfile import load_xyz
-from mdtraj.formats.hoomdxml import load_hoomdxml
-from mdtraj.formats.tng import load_tng
+from .formats import (load_xtc, load_trr, load_hdf5, load_lh5, load_netcdf,
+                      load_mdcrd, load_dcd, load_binpos,
+                      load_pdb, load_arc, load_xml, load_prmtop, load_psf,
+                      load_mol2, load_restrt, load_ncrestrt, load_lammpstrj,
+                      load_dtr, load_xyz, load_hoomdxml, load_tng, load_stk)
+
+# from mdtraj.formats.registry import FormatRegistry
 
 
 from mdtraj.core import element
@@ -57,6 +43,7 @@ from mdtraj.geometry import *
 from mdtraj.core.trajectory import *
 from mdtraj.nmr import *
 import mdtraj.reporters
+
 
 def test(label='full', verbose=2, extra_argv=None, doctests=False):
     """Run tests for mdtraj using nose.
@@ -73,6 +60,8 @@ def test(label='full', verbose=2, extra_argv=None, doctests=False):
     from mdtraj.testing.nosetester import MDTrajTester
     tester = MDTrajTester(mdtraj)
     return tester.test(label=label, verbose=verbose, extra_argv=extra_argv)
+
+
 # prevent nose from discovering this function, or otherwise when its run
 # the test suite in an infinite loop
 test.__test__ = False
@@ -83,6 +72,6 @@ def capi():
     import sys
     module_path = sys.modules['mdtraj'].__path__[0]
     return {
-        'lib_dir':  os.path.join(module_path, 'core', 'lib'),
+        'lib_dir': os.path.join(module_path, 'core', 'lib'),
         'include_dir': os.path.join(module_path, 'core', 'lib'),
     }

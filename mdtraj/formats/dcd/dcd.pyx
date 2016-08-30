@@ -67,7 +67,6 @@ cdef ERROR_MESSAGES = {
 # Code
 ##############################################################################
 
-@FormatRegistry.register_loader('.dcd')
 def load_dcd(filename, top=None, stride=None, atom_indices=None, frame=None):
     """load_dcd(filename, top=None, stride=None, atom_indices=None, frame=None)
 

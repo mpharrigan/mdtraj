@@ -105,7 +105,6 @@ cdef int XTC_HEADER_SIZE = 11*sizeof(np.int32_t) + 2*sizeof(np.float32_t) + DIM*
 # Code
 ###############################################################################
 
-@FormatRegistry.register_loader('.xtc')
 def load_xtc(filename, top=None, stride=None, atom_indices=None, frame=None):
     """load_xtc(filename, top=None, stride=None, atom_indices=None, frame=None)
 
@@ -174,7 +173,7 @@ def load_xtc(filename, top=None, stride=None, atom_indices=None, frame=None):
 
 
 cdef class XTCTrajectoryFile(object):
-    """XTCTrajectoryFile(filenamee, mode='r', force_overwrite=True, **kwargs)
+    """XTCTrajectoryFile(filename, mode='r', force_overwrite=True, **kwargs)
 
     Interface for reading and writing to a GROMACS XTC file.
     This is a file-like objec that supports both reading and writing.

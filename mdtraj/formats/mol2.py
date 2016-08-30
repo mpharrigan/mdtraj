@@ -60,7 +60,7 @@ from mdtraj.formats.registry import FormatRegistry
 __all__ = ['load_mol2', "mol2_to_dataframes"]
 
 @FormatRegistry.register_loader('.mol2')
-def load_mol2(filename):
+def load_mol2(filename, frame=0):
     """Load a TRIPOS mol2 file from disk.
 
     Parameters
@@ -84,6 +84,9 @@ def load_mol2(filename):
     --------
     >>> traj = md.load_mol2('mysystem.mol2')
     """
+
+    assert frame==0, "Only single structure."
+
     from mdtraj.core.trajectory import Trajectory
     from mdtraj.core.topology import Topology
 
