@@ -1,4 +1,3 @@
-# #############################################################################
 # MDTraj: A Python Library for Loading, Saving, and Manipulating
 # Molecular Dynamics Trajectories.
 # Copyright 2012-2014 Stanford University and the Authors
@@ -18,7 +17,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with MDTraj. If not, see <http://www.gnu.org/licenses/>.
-# #############################################################################
 
 from __future__ import print_function
 import re
@@ -33,11 +31,6 @@ from mdtraj.utils.external.pyparsing import (Word, ParserElement, MatchFirst,
 from mdtraj.utils.external.astor import codegen
 ParserElement.enablePackrat()
 
-__all__ = ['parse_selection']
-
-# ############################################################################
-# Globals
-# ############################################################################
 
 NUMS = '.0123456789'
 THIS_ATOM = ast.Name(id='atom', ctx=ast.Load(), SINGLETON=True)
@@ -45,9 +38,6 @@ RE_MODULE = ast.Name(id='re', ctx=ast.Load(), SINGLETON=True)
 SELECTION_GLOBALS = {'re': re}
 _ParsedSelection = namedtuple('_ParsedSelection', ['expr', 'source', 'astnode'])
 
-# ############################################################################
-# Utils
-# ############################################################################
 
 class _RewriteNames(ast.NodeTransformer):
     def visit_Name(self, node):

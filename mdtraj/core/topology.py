@@ -1,7 +1,6 @@
-##############################################################################
 # MDTraj: A Python Library for Loading, Saving, and Manipulating
 #         Molecular Dynamics Trajectories.
-# Copyright 2012-2014 Stanford University and the Authors
+# Copyright 2012-2016 Stanford University and the Authors
 #
 # Authors: Peter Eastman, Robert McGibbon
 # Contributors: Kyle A. Beauchamp, Matthew Harrigan, Carlos Xavier Hernandez
@@ -40,12 +39,6 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 # USE OR OTHER DEALINGS IN THE SOFTWARE.
-##############################################################################
-
-
-##############################################################################
-# Imports
-##############################################################################
 
 from __future__ import print_function, division
 
@@ -60,10 +53,6 @@ from mdtraj.core.residue_names import (_PROTEIN_RESIDUES, _WATER_RESIDUES,
 from mdtraj.core.selection import parse_selection
 from mdtraj.utils import ilen, import_, ensure_type
 from mdtraj.utils.six import string_types
-
-##############################################################################
-# Utilities
-##############################################################################
 
 
 def _topology_from_subset(topology, atom_indices):
@@ -128,11 +117,6 @@ def _topology_from_subset(topology, atom_indices):
     newTopology._numResidues = ilen(newTopology.residues)
 
     return newTopology
-
-
-##############################################################################
-# Classes
-##############################################################################
 
 
 class Topology(object):

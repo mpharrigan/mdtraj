@@ -1,7 +1,6 @@
-##############################################################################
 # MDTraj: A Python Library for Loading, Saving, and Manipulating
 #         Molecular Dynamics Trajectories.
-# Copyright 2012-2014 Stanford University and the Authors
+# Copyright 2012-2016 Stanford University and the Authors
 #
 # Authors: Carlos X. Hernandez
 # Contributors: Robert McGibbon, Jason Swails
@@ -18,7 +17,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with MDTraj. If not, see <http://www.gnu.org/licenses/>.
-##############################################################################
 
 _SOLVENT_TYPES =  frozenset([ '118', '119',  '1AL', '1CU', '2FK',  '2HP', '2OF',
 '3CO',  '3MT', '3NI',  '3OF', '4MO',  '543',  '6MO', 'ACT',  'AG', 'AL',  'ALF',
