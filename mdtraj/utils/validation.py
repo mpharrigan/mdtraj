@@ -60,7 +60,7 @@ def ensure_type(val, dtype, ndim, name, length=None, can_be_none=False, shape=No
     length : int, optional
         How long should the array be?
     can_be_none : bool
-        Is ``val == None`` acceptable?
+        Is ``val is None`` acceptable?
     shape : tuple, optional
         What should be shape of the array be? If the provided tuple has
         Nones in it, those will be semantically interpreted as matching
@@ -69,8 +69,8 @@ def ensure_type(val, dtype, ndim, name, length=None, can_be_none=False, shape=No
         length three without constraining the first two dimensions
     warn_on_cast : bool, default=True
         Raise a warning when the dtypes don't match and a cast is done.
-    add_newaxis_on_deficient_ndim : bool, default=True
-        Add a new axis to the beginining of the array if the number of
+    add_newaxis_on_deficient_ndim : bool, default=False
+        Add a new axis to the beginning of the array if the number of
         dimensions is deficient by one compared to your specification. For
         instance, if you're trying to get out an array of ``ndim == 3``,
         but the user provides an array of ``shape == (10, 10)``, a new axis will
@@ -83,7 +83,7 @@ def ensure_type(val, dtype, ndim, name, length=None, can_be_none=False, shape=No
 
     Returns
     -------
-    typechecked_val : np.ndarray, None
+    typechecked_val : np.ndarray
         If `val=None` and `can_be_none=True`, then this will return None.
         Otherwise, it will return val (or a copy of val). If the dtype wasn't right,
         it'll be casted to the right shape. If the array was not C-contiguous, it'll

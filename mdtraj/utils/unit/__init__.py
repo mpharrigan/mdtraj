@@ -115,16 +115,12 @@ def in_units_of(quantity, units_in, units_out, inplace=False):
 
     Parameters
     ----------
-    quantity : {number, np.ndarray, simtk.unit.Quantity}
-        quantity can either be a unitted quantity -- i.e. instance of
-        simtk.unit.Quantity, or just a bare number or numpy array
+    quantity : np.ndarray
+        numpy array to convert
     units_in : str
-        If you supply a quantity that's not a simtk.unit.Quantity, you should
-        tell me what units it is in. If you don't, i'm just going to echo you
-        back your quantity without doing any unit checking.
+        units in
     units_out : str
-        A string description of the units you want out. This should look
-        like "nanometers/picosecond" or "nanometers**3" or whatever
+        units out
     inplace : bool
         Attempt to do the transformation inplace, by mutating the `quantity`
         argument and avoiding a copy. This is only possible if `quantity` is a

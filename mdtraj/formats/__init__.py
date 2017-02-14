@@ -55,7 +55,7 @@ TRAJECTORY_LOADERS = {
     'binpos': load_binpos,
     'dcd': load_dcd,
     'dtr': load_dtr,
-    'stk': load_stk, # TODO: Does this even work?
+    'stk': load_stk,
     'gro': load_gro,
     'h5': load_hdf5,
     'hdf5': load_hdf5,

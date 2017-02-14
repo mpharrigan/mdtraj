@@ -135,54 +135,6 @@ def load_topology(top, **kwargs):
         raise ValueError("Unknown topology type.")
 
 
-def open(filename, mode='r', force_overwrite=True, **kwargs):
-    """Open a trajectory file-like object
-
-    This factor function returns an instance of an open file-like
-    object capable of reading/writing the trajectory (depending on
-    'mode'). It does not actually load the trajectory from disk or
-    write anything.
-
-    Parameters
-    ----------
-    filename : str
-        Path to the trajectory file on disk
-    mode : {'r', 'w'}
-        The mode in which to open the file, either 'r' for read or 'w' for
-        write.
-    force_overwrite : bool
-        If opened in write mode, and a file by the name of `filename` already
-        exists on disk, should we overwrite it?
-
-    Other Parameters
-    ----------------
-    kwargs : dict
-        Other keyword parameters are passed directly to the file object
-
-    Returns
-    -------
-    fileobject : object
-        Open trajectory file, whose type is determined by the filename
-        extension
-
-    See Also
-    --------
-    load, ArcTrajectoryFile, BINPOSTrajectoryFile, DCDTrajectoryFile,
-    HDF5TrajectoryFile, LH5TrajectoryFile, MDCRDTrajectoryFile,
-    NetCDFTrajectoryFile, PDBTrajectoryFile, TRRTrajectoryFile,
-    XTCTrajectoryFile, TNGTrajectoryFile
-
-    """
-    ext = _get_extension(filename)
-    try:
-        loader = TRAJECTORY_FILEOBJECTS[ext]
-    except KeyError:
-        raise IOError('Sorry, no loader for extension "{}" '
-                      'was found. I can only open files with extensions: {}'
-                      .format(ext, list(TRAJECTORY_FILEOBJECTS.keys())))
-    return loader(filename, mode=mode, force_overwrite=force_overwrite,
-                  **kwargs)
-
 
 def load_frame(filename, index, top=None, atom_indices=None, **kwargs):
     """Load a single frame from a trajectory file
@@ -275,17 +227,13 @@ def load(filename_or_filenames, discard_overlapping_frames=False, **kwargs):
 
     Examples
     --------
-    >>> import mdtraj as md
-    >>> traj = md.load('output.xtc', top='topology.pdb')
-    >>> print traj
-    <mdtraj.Trajectory with 500 frames, 423 atoms at 0x110740a90>
+    >>> md.load('output.xtc', top='topology.pdb')
+      <mdtraj.Trajectory with 500 frames, 423 atoms at 0x110740a90>
 
-    >>> traj2 = md.load('output.xtc', stride=2, top='topology.pdb')
-    >>> print traj2
+    >>> md.load('output.xtc', stride=2, top='topology.pdb')
     <mdtraj.Trajectory with 250 frames, 423 atoms at 0x11136e410>
 
-    >>> traj3 = md.load_hdf5('output.xtc', atom_indices=[0,1] top='topology.pdb')
-    >>> print traj3
+    >>> md.load_hdf5('output.xtc', atom_indices=[0,1] top='topology.pdb')
     <mdtraj.Trajectory with 500 frames, 2 atoms at 0x18236e4a0>
 
     Returns
@@ -454,16 +402,16 @@ def join(trajs, check_topology=True, discard_overlapping_frames=False):
     )
 
 
-class Trajectory(object):
-    """Container object for a molecular dynamics trajectory
+class Trajectory:
+    """A molecular dynamics trajectory
 
-    A Trajectory represents a collection of one or more molecular structures,
-    generally (but not necessarily) from a molecular dynamics trajectory. The
-    Trajectory stores a number of fields describing the system through time,
-    including the cartesian coordinates of each atoms (``xyz``), the topology
-    of the molecular system (``topology``), and information about the
-    unitcell if appropriate (``unitcell_vectors``, ``unitcell_length``,
-    ``unitcell_angles``).
+    A `Trajectory` represents a time-series of one or more molecular structures,
+    generally (but not necessarily) from a molecular dynamics simulation. The
+    `Trajectory` stores a number of fields describing the system through time,
+    including the cartesian coordinates of each atoms (`xyz`), the topology
+    of the molecular system (`topology`), and information about the
+    unitcell if appropriate (`unitcell_vectors`, `unitcell_length`,
+    `unitcell_angles`).
 
     A Trajectory should generally be constructed by loading a file from disk.
     Trajectories can be loaded from (and saved to) the PDB, XTC, TRR, DCD,
@@ -473,31 +421,31 @@ class Trajectory(object):
     from a Trajectory as a separate trajectory. For example, to form a
     trajectory with every other frame, you can slice with ``traj[::2]``.
 
-    Trajectory uses the nanometer, degree & picosecond unit system.
+    Trajectory uses the nanometer, degree, and picosecond unit system.
 
     Examples
     --------
-    >>> # loading a trajectory
-    >>> import mdtraj as md
-    >>> md.load('trajectory.xtc', top='native.pdb')
-    <mdtraj.Trajectory with 1000 frames, 22 atoms at 0x1058a73d0>
+        >>> # loading a trajectory
+        >>> import mdtraj as md
+        >>> md.load('trajectory.xtc', top='native.pdb')
+        <mdtraj.Trajectory with 1000 frames, 22 atoms at 0x1058a73d0>
 
-    >>> # slicing a trajectory
-    >>> t = md.load('trajectory.h5')
-    >>> print(t)
-    <mdtraj.Trajectory with 100 frames, 22 atoms>
-    >>> print(t[::2])
-    <mdtraj.Trajectory with 50 frames, 22 atoms>
+        >>> # slicing a trajectory
+        >>> t = md.load('trajectory.h5')
+        >>> print(t)
+        <mdtraj.Trajectory with 100 frames, 22 atoms>
+        >>> print(t[::2])
+        <mdtraj.Trajectory with 50 frames, 22 atoms>
 
-    >>> # calculating the average distance between two atoms
-    >>> import mdtraj as md
-    >>> import numpy as np
-    >>> t = md.load('trajectory.h5')
-    >>> np.mean(np.sqrt(np.sum((t.xyz[:, 0, :] - t.xyz[:, 21, :])**2, axis=1)))
+        >>> # calculating the average distance between two atoms
+        >>> import numpy as np
+        >>> t = md.load('trajectory.h5')
+        >>> np.mean(np.sqrt(np.sum((t.xyz[:, 0, :] - t.xyz[:, 21, :])**2, axis=1)))
 
     See Also
     --------
-    mdtraj.load : High-level function that loads files and returns an ``md.Trajectory``
+    mdtraj.load : function
+        High-level function that loads files and returns an ``md.Trajectory``
 
     Attributes
     ----------
@@ -1692,7 +1640,8 @@ class Trajectory(object):
 
         See Also
         --------
-        stack : stack multiple trajectories along the atom axis
+        stack : `Trajectory` method
+            stack multiple trajectories along the atom axis
         """
         xyz = np.array(self.xyz[:, atom_indices], order='C')
         topology = None

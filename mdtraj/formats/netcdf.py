@@ -27,12 +27,6 @@ This module provides the ability to read and write AMBER NetCDF trajectories.
 The code is heavily based on amber_netcdf_trajectory_tools.py by John Chodera.
 """
 
-##############################################################################
-# imports
-##############################################################################
-
-from __future__ import print_function, division
-# stdlib
 import os
 import socket
 import warnings
@@ -41,18 +35,11 @@ from distutils.version import StrictVersion
 
 import numpy as np
 from mdtraj import version
-from mdtraj.formats.registry import FormatRegistry
 from mdtraj.utils import ensure_type, import_, in_units_of, cast_indices
 
-__all__ = ['NetCDFTrajectoryFile', 'load_netcdf']
+from ..core import Coordinates
 
-##############################################################################
-# classes
-##############################################################################
 
-@FormatRegistry.register_loader('.nc')
-@FormatRegistry.register_loader('.netcdf')
-@FormatRegistry.register_loader('.ncdf')
 def load_netcdf(filename, top=None, stride=None, atom_indices=None, frame=None):
     """Load an AMBER NetCDF file. Since the NetCDF format doesn't contain
     information to specify the topology, you need to supply a topology
@@ -85,12 +72,9 @@ def load_netcdf(filename, top=None, stride=None, atom_indices=None, frame=None):
     --------
     mdtraj.NetCDFTrajectoryFile :  Low level interface to NetCDF files
     """
-    from mdtraj.core.trajectory import _parse_topology, Trajectory
+    from mdtraj.core.trajectory import load_topology, Trajectory
     if top is None:
         raise ValueError('"top" argument is required for load_netcdf')
-
-    topology = _parse_topology(top)
-    atom_indices = cast_indices(atom_indices)
 
     with NetCDFTrajectoryFile(filename) as f:
         if frame is not None:
@@ -98,14 +82,36 @@ def load_netcdf(filename, top=None, stride=None, atom_indices=None, frame=None):
             n_frames = 1
         else:
             n_frames = None
+        atom_indices = cast_indices(atom_indices)
+        coords = f.read(n_frames=n_frames, stride=stride, atom_indices=atom_indices)
 
-        return f.read_as_traj(topology, n_frames=n_frames, atom_indices=atom_indices, stride=stride)
+    topology = load_topology(top)
+    coords.to_mdtraj()
+    return Trajectory(coords, topology)
 
 
-@FormatRegistry.register_fileobject('.nc')
-@FormatRegistry.register_fileobject('.netcdf')
-@FormatRegistry.register_fileobject('.ncdf')
-class NetCDFTrajectoryFile(object):
+class NetCDFCoordinates(Coordinates):
+    """Amber NetCDF Coordinates
+
+    The native unit system is angstroms and radians.
+    """
+
+    def __init__(self, xyz, time, cell_lengths, cell_angles):
+        super().__init__(xyz=xyz, time=time, unitcell_lengths=cell_lengths, unitcell_angles=cell_angles)
+        self.in_mdtraj_units = False
+
+    def to_mdtraj(self):
+        """Convert to the mdtraj unit system"""
+        if not self.in_mdtraj_units:
+            self.xyz *= 0.1  # angstrom -> nm
+            self.unitcell_lengths *= 0.1  # angstrom -> nm
+            # time is already in picoseconds
+            # angles are already in radians
+            self.in_mdtraj_units = True
+        return self
+
+
+class NetCDFTrajectoryFile:
     """Interface for reading and writing to AMBER NetCDF files. This is a
     file-like object, that supports both reading or writing depending
     on the `mode` flag. It implements the context manager protocol,
@@ -118,15 +124,15 @@ class NetCDFTrajectoryFile(object):
     mode : {'r', 'w'}, default='r'
         The mode in which to open the file. Valid options are 'r' and 'w' for
         'read' and 'write', respectively.
-    force_overwrite : bool, default=False
+    force_overwrite : bool, default=True
         In write mode, if a file named `filename` already exists, clobber
         it and overwrite it.
     """
     distance_unit = 'angstroms'
 
     def __init__(self, filename, mode='r', force_overwrite=True):
-        self._closed = True   # is the file currently closed?
-        self._mode = mode      # what mode were we opened in
+        self._closed = True  # is the file currently closed?
+        self._mode = mode  # what mode were we opened in
         if StrictVersion(import_('scipy.version').short_version) < StrictVersion('0.12.0'):
             raise ImportError('MDTraj NetCDF support requires scipy>=0.12.0. '
                               'You have %s' % import_('scipy.version').short_version)
@@ -143,12 +149,10 @@ class NetCDFTrajectoryFile(object):
         self._handle = netcdf(filename, mode=mode, version=2)
         self._closed = False
 
-        # self._frame_index is the current frame that we're at in the
-        #     file
+        # self._frame_index is the current frame that we're at in the file
         # self._needs_initialization indicates whether we need to set the
         #     global properties of the file. This is required before the first
         #     write operation on a new file
-
         if mode == 'w':
             self._frame_index = 0
             self._needs_initialization = True
@@ -240,7 +244,7 @@ class NetCDFTrajectoryFile(object):
             the information is not present in the file.
         cell_angles : np.ndarray, None
             The angles (\alpha, \beta, \gamma) defining the unit cell for
-            each frame, or None if  the information is not present in the file.
+            each frame, or None if the information is not present in the file.
         """
         self._validate_open()
         if self._mode != 'r':
@@ -252,30 +256,26 @@ class NetCDFTrajectoryFile(object):
         total_n_frames = self.n_frames
         frame_slice = slice(self._frame_index, self._frame_index + min(n_frames, total_n_frames), stride)
         if self._frame_index >= total_n_frames:
-            # just return something that'll look like len(xyz) == 0
-            # this is basically just an alternative to throwing an indexerror
-            return np.array([]), None, None, None
+            raise EOFError()
 
         if atom_indices is None:
             # get all of the atoms
             atom_slice = slice(None)
         else:
-            atom_slice = ensure_type(atom_indices, dtype=np.int, ndim=1,
-                                     name='atom_indices', warn_on_cast=False)
+            atom_slice = ensure_type(atom_indices, dtype=np.int, ndim=1, name='atom_indices')
             if not np.all(atom_slice < self.n_atoms):
                 raise ValueError('As a zero-based index, the entries in '
-                    'atom_indices must all be less than the number of atoms '
-                    'in the trajectory, %d' % self.n_atoms)
+                                 'atom_indices must all be less than the number of atoms '
+                                 'in the trajectory, %d' % self.n_atoms)
             if not np.all(atom_slice >= 0):
                 raise ValueError('The entries in atom_indices must be greater '
-                    'than or equal to zero')
+                                 'than or equal to zero')
 
         if 'coordinates' in self._handle.variables:
-            coordinates = self._handle.variables['coordinates'][frame_slice, atom_slice, :]
+            xyz = self._handle.variables['coordinates'][frame_slice, atom_slice, :]
         else:
-            raise ValueError('No coordinates found in the NetCDF file. The only '
-                             'variables in the file were %s' % 
-                             self._handle.variables.keys())
+            raise ValueError('No coordinates found in the NetCDF file. The only variables in the file were {}'
+                             .format(self._handle.variables.keys()))
 
         if 'time' in self._handle.variables:
             time = self._handle.variables['time'][frame_slice]
@@ -305,8 +305,8 @@ class NetCDFTrajectoryFile(object):
         # the coordinates, and then closing it, and still having the
         # coordinates be a valid memory segment.
         # https://github.com/rmcgibbo/mdtraj/issues/440
-        if coordinates is not None and not coordinates.flags['WRITEABLE']:
-            coordinates = np.array(coordinates, copy=True)
+        if xyz is not None and not xyz.flags['WRITEABLE']:
+            coordinates = np.array(xyz, copy=True)
         if time is not None and not time.flags['WRITEABLE']:
             time = np.array(time, copy=True)
         if cell_lengths is not None and not cell_lengths.flags['WRITEABLE']:
@@ -314,7 +314,7 @@ class NetCDFTrajectoryFile(object):
         if cell_angles is not None and not cell_angles.flags['WRITEABLE']:
             cell_angles = np.array(cell_angles, copy=True)
 
-        return coordinates, time, cell_lengths, cell_angles
+        return NetCDFCoordinates(xyz, time, cell_lengths, cell_angles)
 
     def write(self, coordinates, time=None, cell_lengths=None, cell_angles=None):
         """Write one or more frames of a molecular dynamics trajectory to disk
@@ -350,15 +350,18 @@ class NetCDFTrajectoryFile(object):
 
         # typecheck all of the input arguments rigorously
         coordinates = ensure_type(coordinates, np.float32, 3, 'coordinates', length=None,
-            can_be_none=False, shape=(None, None, 3), warn_on_cast=False, add_newaxis_on_deficient_ndim=True)
+                                  can_be_none=False, shape=(None, None, 3), warn_on_cast=False,
+                                  add_newaxis_on_deficient_ndim=True)
         n_frames, n_atoms = coordinates.shape[0], coordinates.shape[1]
 
         time = ensure_type(time, np.float32, 1, 'time', length=n_frames,
-            can_be_none=True, warn_on_cast=False, add_newaxis_on_deficient_ndim=True)
+                           can_be_none=True, warn_on_cast=False, add_newaxis_on_deficient_ndim=True)
         cell_lengths = ensure_type(cell_lengths, np.float64, 2, 'cell_lengths', length=n_frames,
-            can_be_none=True, shape=(n_frames, 3), warn_on_cast=False, add_newaxis_on_deficient_ndim=True)
+                                   can_be_none=True, shape=(n_frames, 3), warn_on_cast=False,
+                                   add_newaxis_on_deficient_ndim=True)
         cell_angles = ensure_type(cell_angles, np.float64, 2, 'cell_angles', length=n_frames,
-            can_be_none=True, shape=(n_frames, 3), warn_on_cast=False, add_newaxis_on_deficient_ndim=True)
+                                  can_be_none=True, shape=(n_frames, 3), warn_on_cast=False,
+                                  add_newaxis_on_deficient_ndim=True)
 
         # are we dealing with a periodic system?
         if (cell_lengths is None and cell_angles is not None) or (cell_lengths is not None and cell_angles is None):
@@ -368,7 +371,7 @@ class NetCDFTrajectoryFile(object):
             raise ValueError('You provided the variable "%s", but neglected to '
                              'provide "%s". They either BOTH must be provided, or '
                              'neither. Having one without the other is meaningless' % (
-                                provided, neglected))
+                                 provided, neglected))
 
         if self._needs_initialization:
             self._initialize_headers(
@@ -393,7 +396,7 @@ class NetCDFTrajectoryFile(object):
                 self._handle.variables['cell_angles'][frame_slice, :] = cell_angles
         except KeyError as e:
             raise ValueError("The file that you're trying to save to doesn't "
-                "contain the field %s." % str(e))
+                             "contain the field %s." % str(e))
 
         # check for missing attributes
         missing = None
@@ -405,8 +408,8 @@ class NetCDFTrajectoryFile(object):
             missing = 'cell_lengths'
         if missing is not None:
             raise ValueError("The file that you're saving to expects each frame "
-                "to contain %s information, but you did not supply it."
-                "I don't allow 'ragged' arrays." % missing)
+                             "to contain %s information, but you did not supply it."
+                             "I don't allow 'ragged' arrays." % missing)
 
         # update the frame index pointers. this should be done at the
         # end so that if anything errors out, we don't actually get here
@@ -425,8 +428,8 @@ class NetCDFTrajectoryFile(object):
         """
         # Set attributes.
         setattr(self._handle, 'title', 'CREATED at %s on %s' %
-            (datetime.now(), socket.gethostname()))
-        setattr(self._handle, 'application', 'Omnia')
+                (datetime.now(), socket.gethostname()))
+        setattr(self._handle, 'application', 'MDTraj')
         setattr(self._handle, 'program', 'MDTraj')
         setattr(self._handle, 'programVersion', version.short_version)
         setattr(self._handle, 'Conventions', 'AMBER')
@@ -519,11 +522,9 @@ class NetCDFTrajectoryFile(object):
         self._closed = True
 
     def __enter__(self):
-        # supports the context manager protocol
         return self
 
     def __exit__(self, *exc_info):
-        # supports the context manager protocol
         self.close()
 
     def __del__(self):
